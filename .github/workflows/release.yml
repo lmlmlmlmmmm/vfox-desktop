@@ -1,0 +1,53 @@
+name: Release
+
+# 打 tag（如 v0.1.0）时触发；手动 dispatch 兜底
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+# action-gh-release 创建 Release 需要 contents:write
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: 安装 Rust 稳定工具链
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: 缓存 Cargo（加速二次构建）
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: 安装前端依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 构建 exe（跳过 MSI/NSIS bundle）
+        run: pnpm tauri build --no-bundle
+
+      - name: 上传 exe 到 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: src-tauri/target/release/vfox-desktop.exe
+          name: ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
