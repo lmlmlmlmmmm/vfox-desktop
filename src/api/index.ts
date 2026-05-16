@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import type {
+  AppUpdateInfo,
   AvailablePlugin,
   CurrentVersion,
   PluginInfo,
@@ -8,6 +9,7 @@ import type {
   SearchVersion,
   StreamDone,
   StreamLine,
+  UpdateProgress,
   VfoxConfig,
   VfoxStatus,
 } from '@/types'
@@ -56,6 +58,24 @@ export const updateAllPlugins = (jobId: string) =>
 export const getConfig = () => invoke<VfoxConfig>('get_config')
 export const saveConfig = (config: VfoxConfig) =>
   invoke<void>('save_config', { config })
+
+// ---------- app self-update ----------
+/// 读 vfox-desktop 自身版本（编译期注入）
+export const appVersion = () => invoke<string>('app_version')
+
+/// 查 GitHub Release，与当前版本比较
+export const checkAppUpdate = () => invoke<AppUpdateInfo>('check_app_update')
+
+/// 下载新 exe 并原地替换 + 重启。下载进度通过 onUpdateProgress 订阅
+export const downloadAndApplyAppUpdate = (url: string) =>
+  invoke<void>('download_and_apply_app_update', { url })
+
+/// 订阅自更新下载进度事件
+export async function onUpdateProgress(
+  cb: (p: UpdateProgress) => void,
+): Promise<UnlistenFn> {
+  return listen<UpdateProgress>('app://update-progress', e => cb(e.payload))
+}
 
 // ---------- 流式事件订阅 ----------
 /// 订阅一次性流式任务的输出和结束事件

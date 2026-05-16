@@ -60,3 +60,22 @@ export interface StreamDone {
   success: boolean
   code: number | null
 }
+
+/// 应用自身的更新检查结果
+export interface AppUpdateInfo {
+  current: string
+  latest: string
+  has_update: boolean
+  release_url: string
+  /// 新 exe 直链；release 中无 .exe asset 时为 null
+  download_url: string | null
+  release_notes: string
+  asset_size: number | null
+}
+
+/// 应用更新下载进度事件
+export interface UpdateProgress {
+  downloaded: number
+  /// HTTP 响应可能不带 Content-Length
+  total: number | null
+}

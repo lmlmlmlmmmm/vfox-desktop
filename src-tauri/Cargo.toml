@@ -30,3 +30,6 @@ dirs = "6"
 strip-ansi-escapes = "0.2"
 # 后续插件市场可能需要正则提取
 regex = "1"
+# 自更新：GitHub Release API + 下载新 exe
+# rustls-tls：避免依赖系统 OpenSSL；stream：流式下载推送进度
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"] }

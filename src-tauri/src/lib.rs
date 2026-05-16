@@ -8,10 +8,14 @@ pub mod error;
 pub mod paths;
 pub mod vfox;
 
-use commands::{config as cmd_config, plugin, sdk, system};
+use commands::{config as cmd_config, plugin, sdk, system, updater};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // 启动时清理上次自更新残留的 *.old / *.new（Windows 运行中的 exe 无法删，
+    // 只能延迟到下次启动）
+    updater::cleanup_stale_old_exe();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
@@ -35,6 +39,10 @@ pub fn run() {
             // config
             cmd_config::get_config,
             cmd_config::save_config,
+            // updater (app self-update)
+            updater::app_version,
+            updater::check_app_update,
+            updater::download_and_apply_app_update,
         ])
         .run(tauri::generate_context!())
         .expect("vfox-desktop 启动失败");

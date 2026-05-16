@@ -27,6 +27,17 @@ fn vfox_cmd() -> Command {
     // 显式禁用交互式行为（vfox 部分子命令可能读 stdin）
     cmd.stdin(Stdio::null());
 
+    // 关键：伪装成"已 hook 的 shell"运行环境
+    //
+    // vfox 用 `__VFOX_SHELL` 是否非空来判定 IsHookEnv()。GUI 调用时若不设此变量，
+    // `vfox use --global` 末尾会走 `shell.Open(os.Getppid())` 分支：
+    // 它会读取父进程 cmdline 当成 shell 重新 exec ——
+    // 而桌面端的父进程就是 vfox-desktop.exe 本身，于是每次切版本会多弹一个 GUI 实例。
+    //
+    // 注入任意非空值即可绕过该分支；选用 "pwsh" 是因为它是 Windows 上 vfox 推荐 shell，
+    // 语义最贴近实际场景；vfox 在 use/install 路径不会读取此变量的具体值。
+    cmd.env("__VFOX_SHELL", "pwsh");
+
     // Windows: 防止控制台子进程（vfox.exe）弹出黑色 cmd 窗口
     // 0x08000000 = CREATE_NO_WINDOW，详见 Win32 CreateProcess flags
     #[cfg(windows)]
